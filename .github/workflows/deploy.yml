@@ -1,0 +1,58 @@
+name: Deploy Django to Azure VPS
+
+on: 
+  push: 
+    branches:  [ master ]
+  workflow_dispatch:
+
+jobs:
+  deploy: 
+    runs-on:  ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/. ssh
+        echo "${{ secrets. VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+    
+    - name: Deploy to VPS
+      env:
+        VPS_HOST: ${{ secrets. VPS_HOST }}
+        VPS_USER: ${{ secrets. VPS_USERNAME }}
+        PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
+        VENV_PATH: ${{ secrets. VENV_PATH }}
+      run: |
+        ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
+          set -e
+          
+          echo '✅ 1. Navegando al directorio del proyecto.. .'
+          cd $PROJECT_PATH
+          
+          echo '✅ 2. Actualizando código desde GitHub...'
+          git fetch origin
+          git reset --hard origin/master
+          
+          echo '✅ 3. Activando entorno virtual...'
+          source $VENV_PATH/bin/activate
+          
+          echo '✅ 4. Instalando/actualizando dependencias...'
+          pip install -r requirements.txt
+          
+          echo '✅ 5. Aplicando migraciones de base de datos...'
+          python manage.py migrate --noinput
+          
+          echo '✅ 6. Recolectando archivos estáticos...'
+          python manage.py collectstatic --noinput --clear
+          
+          echo '✅ 7. Reiniciando Gunicorn...'
+          systemctl restart gunicorn
+          
+          echo '✅ 8. Reiniciando Nginx...'
+          systemctl restart nginx
+          
+          echo '🚀 Despliegue completado exitosamente!'
+        "
