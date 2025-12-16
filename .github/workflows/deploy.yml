@@ -1,12 +1,12 @@
 name: Deploy Django to Azure VPS
 
 on: 
-  push: 
-    branches:  [ master ]
+  push:
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
-  deploy: 
+  deploy:
     runs-on:  ubuntu-latest
     
     steps:
@@ -14,7 +14,7 @@ jobs:
     
     - name: Setup SSH
       run: |
-        mkdir -p ~/.ssh
+        mkdir -p ~/. ssh
         echo "${{ secrets. VPS_SSH_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
@@ -29,30 +29,42 @@ jobs:
         ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST "
           set -e
           
-          echo '✅ 1. Navegando al directorio del proyecto.. .'
+          echo '🚀 Iniciando despliegue...'
+          echo '================================'
+          
+          echo '✅ 1. Navegando al directorio del proyecto...'
           cd $PROJECT_PATH
           
           echo '✅ 2. Actualizando código desde GitHub...'
           git fetch origin
           git reset --hard origin/master
+          git pull origin master
           
           echo '✅ 3. Activando entorno virtual...'
           source $VENV_PATH/bin/activate
           
           echo '✅ 4. Instalando/actualizando dependencias...'
+          pip install --upgrade pip
           pip install -r requirements.txt
           
           echo '✅ 5. Aplicando migraciones de base de datos...'
-          python manage.py migrate --noinput
+          python manage. py migrate --noinput
           
           echo '✅ 6. Recolectando archivos estáticos...'
           python manage.py collectstatic --noinput --clear
           
-          echo '✅ 7. Reiniciando Gunicorn...'
+          echo '✅ 7. Verificando configuración de Nginx...'
+          nginx -t
+          
+          echo '✅ 8. Reiniciando Gunicorn...'
           systemctl restart gunicorn
+          systemctl status gunicorn --no-pager
           
-          echo '✅ 8. Reiniciando Nginx...'
+          echo '✅ 9. Reiniciando Nginx...'
           systemctl restart nginx
+          systemctl status nginx --no-pager
           
-          echo '🚀 Despliegue completado exitosamente!'
+          echo '================================'
+          echo '🎉 Despliegue completado exitosamente!'
+          echo '🌐 Accede a:  http://herrera-transporte-api. desarrollo-software.xyz/admin/'
         "
