@@ -22,13 +22,30 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar usuarios.
     Solo admins pueden crear, actualizar y eliminar usuarios.
+    Usuarios autenticados pueden ver su propia información.
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAdminUser]
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['username', 'email', 'first_name', 'last_name']
     ordering_fields = ['id', 'username', 'email']
+    
+    def get_permissions(self):
+        if self.action == 'retrieve':
+            # Permitir que usuarios autenticados vean su propia info
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAdminUser()]
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Solo permitir ver su propia info a menos que sea admin"""
+        instance = self.get_object()
+        if not request.user.is_staff and instance.id != request.user.id:
+            return Response(
+                {'detail': 'No tienes permiso para ver este usuario.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def register(self, request):
@@ -219,7 +236,7 @@ class ViajeViewSet(viewsets.ModelViewSet):
 class TarjetaViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar tarjetas.
-    GET: Público | POST/PUT/DELETE: Solo Admin
+    GET: Público | POST: Usuario autenticado | PUT/DELETE: Solo Admin o propietario
     """
     queryset = Tarjeta.objects.all()
     serializer_class = TarjetaSerializer
@@ -231,7 +248,18 @@ class TarjetaViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'boletos']:
             return [permissions.AllowAny()]
+        elif self.action == 'create':
+            # Permitir que usuarios autenticados creen tarjetas
+            return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
+    
+    def perform_create(self, serializer):
+        """Auto-asignar el usuario actual al crear una tarjeta"""
+        # Si no es admin, forzar que la tarjeta sea del usuario actual
+        if not self.request.user.is_staff:
+            serializer.save(usuario=self.request.user)
+        else:
+            serializer.save()
     
     @action(detail=True, methods=['post'])
     def recargar(self, request, pk=None):

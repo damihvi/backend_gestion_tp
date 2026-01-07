@@ -158,10 +158,12 @@ class Tarjeta(models.Model):
         ('jubilado', 'Jubilado'),
     ]
     
+    usuario = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='tarjetas')
     numero = models.CharField(max_length=50, unique=True)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     saldo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fecha_emision = models.DateField(auto_now_add=True)
+    fecha_expiracion = models.DateField()
     activa = models.BooleanField(default=True)
     
     class Meta:

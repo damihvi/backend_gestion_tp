@@ -145,7 +145,7 @@ class TarjetaSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Tarjeta
-        fields = ['id', 'numero', 'tipo', 'saldo', 'fecha_emision', 'activa', 'total_boletos']
+        fields = ['id', 'usuario', 'numero', 'tipo', 'saldo', 'fecha_emision', 'fecha_expiracion', 'activa', 'total_boletos']
         read_only_fields = ['id', 'fecha_emision']
     
     def get_total_boletos(self, obj):
