@@ -58,6 +58,12 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def me(self, request):
+        """Endpoint para obtener información del usuario actual"""
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
 
 
 class LineaViewSet(viewsets.ModelViewSet):
