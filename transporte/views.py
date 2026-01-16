@@ -31,7 +31,10 @@ class UserViewSet(viewsets.ModelViewSet):
     ordering_fields = ['id', 'username', 'email']
     
     def get_permissions(self):
-        if self.action == 'retrieve':
+        if self.action == 'register':
+            # Permitir que cualquiera se registre
+            return [permissions.AllowAny()]
+        elif self.action in ['retrieve', 'me']:
             # Permitir que usuarios autenticados vean su propia info
             return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
