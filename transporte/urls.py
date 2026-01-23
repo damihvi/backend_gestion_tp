@@ -1,16 +1,20 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    UserViewSet, LineaViewSet, ParadaViewSet, RutaViewSet, RutaParadaViewSet,
+    UserViewSet, RutaViewSet, RutaParadaViewSet,
     VehiculoViewSet, ChoferViewSet, HorarioViewSet, ViajeViewSet,
     TarjetaViewSet, BoletoViewSet, MantenimientoViewSet, IncidenteViewSet
 )
+# Importar las vistas de MongoDB
+from .mongo_views import LineaViewSet as LineaMongoViewSet, ParadaViewSet as ParadaMongoViewSet
 
 # Router para los ViewSets
 router = DefaultRouter()
 router.register(r'usuarios', UserViewSet, basename='usuario')
-router.register(r'lineas', LineaViewSet, basename='linea')
-router.register(r'paradas', ParadaViewSet, basename='parada')
+# Usar MongoDB para lineas y paradas
+router.register(r'lineas', LineaMongoViewSet, basename='linea')
+router.register(r'paradas', ParadaMongoViewSet, basename='parada')
+# El resto sigue usando PostgreSQL
 router.register(r'rutas', RutaViewSet, basename='ruta')
 router.register(r'ruta-paradas', RutaParadaViewSet, basename='ruta-parada')
 router.register(r'vehiculos', VehiculoViewSet, basename='vehiculo')

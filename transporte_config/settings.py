@@ -198,3 +198,12 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# Configuración de MongoDB
+import mongoengine
+
+mongoengine.connect(
+    db='transporte_mongo',
+    host='localhost',
+    port=27017
+)
