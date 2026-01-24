@@ -75,6 +75,15 @@ class RutaSerializer(serializers.ModelSerializer):
         model = Ruta
         fields = ['id', 'linea', 'linea_numero', 'linea_detalle', 'nombre', 'descripcion', 'paradas']
         read_only_fields = ['id']
+        extra_kwargs = {
+            'linea': {'required': False}
+        }
+    
+    def validate(self, attrs):
+        # Require either linea or linea_numero
+        if 'linea' not in attrs and 'linea_numero' not in attrs:
+            raise serializers.ValidationError('Debe proporcionar linea o linea_numero')
+        return attrs
     
     def create(self, validated_data):
         # Si se envía linea_numero, buscar la línea por número
