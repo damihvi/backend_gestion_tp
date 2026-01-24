@@ -260,6 +260,9 @@ class TarjetaViewSet(viewsets.ModelViewSet):
         elif self.action == 'create':
             # Permitir que usuarios autenticados creen tarjetas
             return [permissions.IsAuthenticated()]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            # Permitir que usuarios autenticados editen/eliminen sus propias tarjetas
+            return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
     
     def perform_create(self, serializer):
@@ -269,6 +272,21 @@ class TarjetaViewSet(viewsets.ModelViewSet):
             serializer.save(usuario=self.request.user)
         else:
             serializer.save()
+    
+    def perform_update(self, serializer):
+        """Permitir que los usuarios solo actualicen sus propias tarjetas"""
+        tarjeta = self.get_object()
+        if not self.request.user.is_staff and tarjeta.usuario != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permiso para editar esta tarjeta")
+        serializer.save()
+    
+    def perform_destroy(self, instance):
+        """Permitir que los usuarios solo eliminen sus propias tarjetas"""
+        if not self.request.user.is_staff and instance.usuario != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permiso para eliminar esta tarjeta")
+        instance.delete()
     
     @action(detail=True, methods=['post'])
     def recargar(self, request, pk=None):
