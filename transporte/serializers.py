@@ -69,11 +69,34 @@ class RutaSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Ruta"""
     linea_detalle = LineaSerializer(source='linea', read_only=True)
     paradas = RutaParadaSerializer(source='paradas_orden', many=True, read_only=True)
+    linea_numero = serializers.IntegerField(write_only=True, required=False)
     
     class Meta:
         model = Ruta
-        fields = ['id', 'linea', 'linea_detalle', 'nombre', 'descripcion', 'paradas']
+        fields = ['id', 'linea', 'linea_numero', 'linea_detalle', 'nombre', 'descripcion', 'paradas']
         read_only_fields = ['id']
+    
+    def create(self, validated_data):
+        # Si se envía linea_numero, buscar la línea por número
+        linea_numero = validated_data.pop('linea_numero', None)
+        if linea_numero is not None:
+            try:
+                linea = Linea.objects.get(numero=linea_numero)
+                validated_data['linea'] = linea
+            except Linea.DoesNotExist:
+                raise serializers.ValidationError({'linea_numero': f'No existe una línea con número {linea_numero}'})
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        # Si se envía linea_numero, buscar la línea por número
+        linea_numero = validated_data.pop('linea_numero', None)
+        if linea_numero is not None:
+            try:
+                linea = Linea.objects.get(numero=linea_numero)
+                validated_data['linea'] = linea
+            except Linea.DoesNotExist:
+                raise serializers.ValidationError({'linea_numero': f'No existe una línea con número {linea_numero}'})
+        return super().update(instance, validated_data)
 
 
 class VehiculoSerializer(serializers.ModelSerializer):
