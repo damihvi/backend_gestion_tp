@@ -142,6 +142,48 @@ class UserSerializer(serializers.ModelSerializer):
         profile.save()
         
         return instance
+    
+    def create(self, validated_data):
+        # Extraer campos que no pertenecen al modelo User
+        is_asistente = validated_data.pop('is_asistente', False)
+        is_chofer = validated_data.pop('is_chofer', False)
+        chofer_id = validated_data.pop('chofer_id', None)
+        chofer_dni = validated_data.pop('chofer_dni', None)
+        chofer_licencia = validated_data.pop('chofer_licencia', None)
+        chofer_telefono = validated_data.pop('chofer_telefono', None)
+        chofer_fecha_contratacion = validated_data.pop('chofer_fecha_contratacion', None)
+        
+        # Crear usuario
+        password = validated_data.pop('password', None)
+        if password:
+            user = User.objects.create_user(**validated_data, password=password)
+        else:
+            user = User.objects.create(**validated_data)
+        
+        # Crear perfil
+        profile = UserProfile.objects.create(
+            user=user,
+            is_asistente=is_asistente,
+            is_chofer=is_chofer
+        )
+        
+        # Si es chofer, crear automáticamente el registro de Chofer
+        if is_chofer:
+            from .models import Chofer
+            from datetime import date
+            chofer = Chofer.objects.create(
+                nombre=user.first_name or user.username,
+                apellido=user.last_name or '',
+                dni=chofer_dni or '',
+                licencia=chofer_licencia or '',
+                telefono=chofer_telefono or '',
+                email=user.email,
+                fecha_contratacion=chofer_fecha_contratacion or date.today()
+            )
+            profile.chofer = chofer
+            profile.save()
+        
+        return user
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
