@@ -9,34 +9,51 @@ from .models import (
 class UserSerializer(serializers.ModelSerializer):
     """Serializer para el modelo User"""
     is_conductor = serializers.BooleanField(required=False, default=False)
+    chofer_id = serializers.IntegerField(required=False, allow_null=True)
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_conductor']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_conductor', 'chofer_id']
         read_only_fields = ['id']
     
     def to_representation(self, instance):
-        """Sobrescribir para obtener is_conductor del perfil"""
+        """Sobrescribir para obtener is_conductor y chofer_id del perfil"""
         data = super().to_representation(instance)
-        # Obtener is_conductor de forma segura
+        # Obtener is_conductor y chofer_id de forma segura
         try:
-            data['is_conductor'] = instance.profile.is_conductor if hasattr(instance, 'profile') else False
+            if hasattr(instance, 'profile'):
+                data['is_conductor'] = instance.profile.is_conductor
+                data['chofer_id'] = instance.profile.chofer_id if instance.profile.chofer else None
+            else:
+                data['is_conductor'] = False
+                data['chofer_id'] = None
         except UserProfile.DoesNotExist:
             data['is_conductor'] = False
+            data['chofer_id'] = None
         return data
     
     def update(self, instance, validated_data):
-        # Extraer is_conductor antes de actualizar el usuario
+        # Extraer is_conductor y chofer_id antes de actualizar el usuario
         is_conductor = validated_data.pop('is_conductor', None)
+        chofer_id = validated_data.pop('chofer_id', None)
         
         # Actualizar usuario
         instance = super().update(instance, validated_data)
         
         # Actualizar perfil
+        profile, created = UserProfile.objects.get_or_create(user=instance)
+        
         if is_conductor is not None:
-            profile, created = UserProfile.objects.get_or_create(user=instance)
             profile.is_conductor = is_conductor
-            profile.save()
+        
+        # Actualizar chofer_id (permitir asignar None para desconectar)
+        if chofer_id is not None:
+            profile.chofer_id = chofer_id
+        elif 'chofer_id' in self.initial_data:
+            # Si explícitamente se envió None, desconectar
+            profile.chofer_id = None
+            
+        profile.save()
         
         return instance
 
