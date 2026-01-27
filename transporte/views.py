@@ -24,7 +24,7 @@ class UserViewSet(viewsets.ModelViewSet):
     Solo admins pueden crear, actualizar y eliminar usuarios.
     Usuarios autenticados pueden ver su propia información.
     """
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by('-id')
     serializer_class = UserSerializer
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['username', 'email', 'first_name', 'last_name']
