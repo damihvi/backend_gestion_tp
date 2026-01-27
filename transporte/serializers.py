@@ -53,6 +53,20 @@ class UserSerializer(serializers.ModelSerializer):
         
         if is_chofer is not None:
             profile.is_chofer = is_chofer
+            
+            # Si se marca como chofer, crear automáticamente el registro de Chofer
+            if is_chofer and not profile.chofer:
+                from .models import Chofer
+                from datetime import date
+                chofer = Chofer.objects.create(
+                    nombre=instance.first_name or instance.username,
+                    apellido=instance.last_name or '',
+                    dni='',  # Se deberá actualizar después
+                    licencia='',  # Se deberá actualizar después
+                    email=instance.email,
+                    fecha_contratacion=date.today()
+                )
+                profile.chofer = chofer
         
         # Actualizar chofer_id (permitir asignar None para desconectar)
         if chofer_id is not None:
@@ -106,6 +120,21 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         profile, created = UserProfile.objects.get_or_create(user=user)
         profile.is_asistente = is_asistente
         profile.is_chofer = is_chofer
+        
+        # Si es chofer, crear automáticamente el registro de Chofer
+        if is_chofer:
+            from .models import Chofer
+            from datetime import date
+            chofer = Chofer.objects.create(
+                nombre=user.first_name or user.username,
+                apellido=user.last_name or '',
+                dni='',  # Se deberá actualizar después
+                licencia='',  # Se deberá actualizar después
+                email=user.email,
+                fecha_contratacion=date.today()
+            )
+            profile.chofer = chofer
+        
         profile.save()
         return user
 
