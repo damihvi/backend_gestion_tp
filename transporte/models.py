@@ -7,7 +7,8 @@ from django.dispatch import receiver
 class UserProfile(models.Model):
     """Perfil extendido del usuario para roles adicionales"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    is_conductor = models.BooleanField(default=False, verbose_name='Es Conductor')
+    is_asistente = models.BooleanField(default=False, verbose_name='Es Asistente/Cobrador')
+    is_chofer = models.BooleanField(default=False, verbose_name='Es Chofer')
     chofer = models.OneToOneField('Chofer', on_delete=models.SET_NULL, null=True, blank=True, related_name='user_profile')
     
     class Meta:

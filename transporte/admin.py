@@ -7,9 +7,9 @@ from .models import (
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'is_conductor', 'chofer']
+    list_display = ['user', 'is_asistente', 'is_chofer', 'chofer']
     search_fields = ['user__username', 'user__email']
-    list_filter = ['is_conductor']
+    list_filter = ['is_asistente', 'is_chofer']
 
 
 @admin.register(Linea)

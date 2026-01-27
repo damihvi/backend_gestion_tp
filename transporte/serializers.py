@@ -8,33 +8,38 @@ from .models import (
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer para el modelo User"""
-    is_conductor = serializers.BooleanField(required=False, default=False)
+    is_asistente = serializers.BooleanField(required=False, default=False)
+    is_chofer = serializers.BooleanField(required=False, default=False)
     chofer_id = serializers.IntegerField(required=False, allow_null=True)
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_conductor', 'chofer_id']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_asistente', 'is_chofer', 'chofer_id']
         read_only_fields = ['id']
     
     def to_representation(self, instance):
-        """Sobrescribir para obtener is_conductor y chofer_id del perfil"""
+        """Sobrescribir para obtener is_asistente, is_chofer y chofer_id del perfil"""
         data = super().to_representation(instance)
-        # Obtener is_conductor y chofer_id de forma segura
+        # Obtener datos del perfil de forma segura
         try:
             if hasattr(instance, 'profile'):
-                data['is_conductor'] = instance.profile.is_conductor
+                data['is_asistente'] = instance.profile.is_asistente
+                data['is_chofer'] = instance.profile.is_chofer
                 data['chofer_id'] = instance.profile.chofer_id if instance.profile.chofer else None
             else:
-                data['is_conductor'] = False
+                data['is_asistente'] = False
+                data['is_chofer'] = False
                 data['chofer_id'] = None
         except UserProfile.DoesNotExist:
-            data['is_conductor'] = False
+            data['is_asistente'] = False
+            data['is_chofer'] = False
             data['chofer_id'] = None
         return data
     
     def update(self, instance, validated_data):
-        # Extraer is_conductor y chofer_id antes de actualizar el usuario
-        is_conductor = validated_data.pop('is_conductor', None)
+        # Extraer is_asistente, is_chofer y chofer_id antes de actualizar el usuario
+        is_asistente = validated_data.pop('is_asistente', None)
+        is_chofer = validated_data.pop('is_chofer', None)
         chofer_id = validated_data.pop('chofer_id', None)
         
         # Actualizar usuario
@@ -43,8 +48,11 @@ class UserSerializer(serializers.ModelSerializer):
         # Actualizar perfil
         profile, created = UserProfile.objects.get_or_create(user=instance)
         
-        if is_conductor is not None:
-            profile.is_conductor = is_conductor
+        if is_asistente is not None:
+            profile.is_asistente = is_asistente
+        
+        if is_chofer is not None:
+            profile.is_chofer = is_chofer
         
         # Actualizar chofer_id (permitir asignar None para desconectar)
         if chofer_id is not None:
@@ -62,11 +70,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer para registro de usuarios"""
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'}, label='Confirmar contraseña')
-    is_conductor = serializers.BooleanField(required=False, default=False)
+    is_asistente = serializers.BooleanField(required=False, default=False)
+    is_chofer = serializers.BooleanField(required=False, default=False)
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'password2', 'first_name', 'last_name', 'is_conductor']
+        fields = ['username', 'email', 'password', 'password2', 'first_name', 'last_name', 'is_asistente', 'is_chofer']
         extra_kwargs = {
             'email': {'required': True}
         }
@@ -90,11 +99,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         validated_data.pop('password2')
-        is_conductor = validated_data.pop('is_conductor', False)
+        is_asistente = validated_data.pop('is_asistente', False)
+        is_chofer = validated_data.pop('is_chofer', False)
         user = User.objects.create_user(**validated_data)
         # Configurar el perfil
         profile, created = UserProfile.objects.get_or_create(user=user)
-        profile.is_conductor = is_conductor
+        profile.is_asistente = is_asistente
+        profile.is_chofer = is_chofer
         profile.save()
         return user
 
