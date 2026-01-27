@@ -153,12 +153,14 @@ class UserSerializer(serializers.ModelSerializer):
         chofer_telefono = validated_data.pop('chofer_telefono', None)
         chofer_fecha_contratacion = validated_data.pop('chofer_fecha_contratacion', None)
         
-        # Crear usuario
+        # Crear usuario con password por defecto si no se proporciona
         password = validated_data.pop('password', None)
         if password:
             user = User.objects.create_user(**validated_data, password=password)
         else:
-            user = User.objects.create(**validated_data)
+            # Password por defecto para creación administrativa
+            username = validated_data.get('username', 'user')
+            user = User.objects.create_user(**validated_data, password=f'{username}123')
         
         # Crear perfil
         profile = UserProfile.objects.create(
