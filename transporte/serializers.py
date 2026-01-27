@@ -50,6 +50,21 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'password2', 'first_name', 'last_name', 'is_conductor']
+        extra_kwargs = {
+            'email': {'required': True}
+        }
+    
+    def validate_email(self, value):
+        """Validar que el email no esté en uso"""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Este correo electrónico ya está registrado.")
+        return value
+    
+    def validate_username(self, value):
+        """Validar que el username no esté en uso"""
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Este nombre de usuario ya está en uso.")
+        return value
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
