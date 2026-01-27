@@ -134,6 +134,13 @@ class UserSerializer(serializers.ModelSerializer):
         profile.save()
         
         return instance
+
+    def validate(self, attrs):
+        # Normalizar fecha de contratación cuando llega como cadena vacía
+        fecha_raw = self.initial_data.get('chofer_fecha_contratacion') if hasattr(self, 'initial_data') else None
+        if fecha_raw == '':
+            attrs['chofer_fecha_contratacion'] = None
+        return super().validate(attrs)
     
     def create(self, validated_data):
         # Extraer campos que no pertenecen al modelo User
