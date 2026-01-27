@@ -330,20 +330,28 @@ class TarjetaViewSet(viewsets.ModelViewSet):
 class BoletoViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gestionar boletos.
-    GET: Público | POST/PUT/DELETE: Requiere autenticación
+    Los usuarios solo pueden ver sus propios boletos (a través de sus tarjetas).
+    Los admins pueden ver todos los boletos.
     """
     queryset = Boleto.objects.select_related('viaje', 'tarjeta', 'parada_subida')
     serializer_class = BoletoSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['viaje', 'tarjeta', 'parada_subida']
     search_fields = ['tarjeta__numero']
     ordering_fields = ['fecha_compra', 'monto']
     
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+    def get_queryset(self):
+        """Filtrar boletos según el usuario"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        # Si es admin, ver todos los boletos
+        if user.is_staff or user.is_superuser:
+            return queryset
+        
+        # Si es usuario normal, solo ver boletos de sus propias tarjetas
+        return queryset.filter(tarjeta__usuario=user)
 
 
 class MantenimientoViewSet(viewsets.ModelViewSet):
