@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
     chofer_dni = serializers.CharField(required=False, allow_blank=True)
     chofer_licencia = serializers.CharField(required=False, allow_blank=True)
     chofer_telefono = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    chofer_fecha_contratacion = serializers.DateField(required=False, allow_null=True)
+    chofer_fecha_contratacion = serializers.DateField(required=False, allow_null=True, default=None)
     
     class Meta:
         model = User
@@ -144,6 +144,10 @@ class UserSerializer(serializers.ModelSerializer):
         chofer_licencia = validated_data.pop('chofer_licencia', None)
         chofer_telefono = validated_data.pop('chofer_telefono', None)
         chofer_fecha_contratacion = validated_data.pop('chofer_fecha_contratacion', None)
+        
+        # Limpiar fecha vacía
+        if chofer_fecha_contratacion == '':
+            chofer_fecha_contratacion = None
         
         # Crear usuario con password por defecto si no se proporciona
         password = validated_data.pop('password', None)
