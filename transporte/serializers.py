@@ -6,6 +6,15 @@ from .models import (
 )
 
 
+class FlexibleDateField(serializers.DateField):
+    """Permite recibir '' y lo convierte a None antes de validar la fecha."""
+
+    def to_internal_value(self, value):
+        if value in ('', None):
+            return None
+        return super().to_internal_value(value)
+
+
 class UserSerializer(serializers.ModelSerializer):
     """Serializer para el modelo User"""
     is_asistente = serializers.BooleanField(required=False, default=False)
@@ -16,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
     chofer_dni = serializers.CharField(required=False, allow_blank=True)
     chofer_licencia = serializers.CharField(required=False, allow_blank=True)
     chofer_telefono = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    chofer_fecha_contratacion = serializers.DateField(required=False, allow_null=True, default=None)
+    chofer_fecha_contratacion = FlexibleDateField(required=False, allow_null=True, default=None)
     
     class Meta:
         model = User
@@ -151,7 +160,7 @@ class UserSerializer(serializers.ModelSerializer):
         chofer_licencia = validated_data.pop('chofer_licencia', None)
         chofer_telefono = validated_data.pop('chofer_telefono', None)
         chofer_fecha_contratacion = validated_data.pop('chofer_fecha_contratacion', None)
-        
+
         # Limpiar fecha vacía
         if chofer_fecha_contratacion == '':
             chofer_fecha_contratacion = None
