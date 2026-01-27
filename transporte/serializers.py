@@ -184,7 +184,9 @@ class UserSerializer(serializers.ModelSerializer):
                 fecha_contratacion=chofer_fecha_contratacion or date.today()
             )
             profile.chofer = chofer
-            profile.save()
+        
+        # Guardar perfil siempre
+        profile.save()
         
         return user
 
