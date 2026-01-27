@@ -18,7 +18,13 @@ class UserSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """Sobrescribir para obtener is_conductor del perfil"""
         data = super().to_representation(instance)
-        data['is_conductor'] = hasattr(instance, 'profile') and instance.profile.is_conductor
+        # Crear perfil si no existe y obtener is_conductor
+        try:
+            if not hasattr(instance, 'profile'):
+                UserProfile.objects.create(user=instance)
+            data['is_conductor'] = instance.profile.is_conductor
+        except Exception:
+            data['is_conductor'] = False
         return data
     
     def update(self, instance, validated_data):
