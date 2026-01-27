@@ -162,12 +162,17 @@ class UserSerializer(serializers.ModelSerializer):
             username = validated_data.get('username', 'user')
             user = User.objects.create_user(**validated_data, password=f'{username}123')
         
-        # Crear perfil
-        profile = UserProfile.objects.create(
+        # Crear o actualizar perfil
+        profile, created = UserProfile.objects.get_or_create(
             user=user,
-            is_asistente=is_asistente,
-            is_chofer=is_chofer
+            defaults={
+                'is_asistente': is_asistente,
+                'is_chofer': is_chofer
+            }
         )
+        if not created:
+            profile.is_asistente = is_asistente
+            profile.is_chofer = is_chofer
         
         # Si es chofer, crear automáticamente el registro de Chofer
         if is_chofer:
