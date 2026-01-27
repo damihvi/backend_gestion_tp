@@ -19,7 +19,8 @@ API REST desarrollada con Django REST Framework para la gestión de un sistema d
 
 -  **CRUD completo** para 13 entidades del sistema
 -  **Autenticación JWT** (JSON Web Tokens)
--  **Sistema de permisos**: usuarios normales y administradores
+-  **Sistema de permisos**: usuarios normales, conductores y administradores
+-  **Perfil de usuario extendido**: rol de conductor vinculado a choferes
 -  **Filtros y búsquedas** avanzadas
 -  **Paginación** automática de resultados
 -  **Documentación interactiva** con Swagger/OpenAPI
@@ -408,6 +409,31 @@ Aquí se puede:
 *Excepciones:
 - Boletos e Incidentes: usuarios autenticados pueden crear
 - Registro de usuarios: público
+
+### Roles de Usuario
+
+El sistema maneja tres niveles de roles que pueden combinarse:
+
+1. **Usuario Normal** - Acceso básico de lectura
+2. **Conductor** (`is_conductor: true`) - Usuario vinculado a un chofer del sistema, puede gestionar viajes asignados
+3. **Administrador** (`is_staff: true`) - Acceso completo para crear, editar y eliminar recursos
+4. **Superusuario** (`is_superuser: true`) - Acceso total al sistema incluyendo panel de administración de Django
+
+**Campos del perfil de usuario:**
+```json
+{
+  "id": 1,
+  "username": "conductor1",
+  "email": "conductor@example.com",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "is_staff": false,
+  "is_superuser": false,
+  "is_conductor": true
+}
+```
+
+**Nota:** El campo `is_conductor` se gestiona a través del modelo `UserProfile` que extiende el modelo de usuario estándar de Django.
 
 ## Manejo de Errores
 
