@@ -8,26 +8,33 @@ from .models import (
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer para el modelo User"""
-    is_conductor = serializers.SerializerMethodField()
+    is_conductor = serializers.BooleanField(required=False, default=False)
     
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_conductor']
         read_only_fields = ['id']
     
-    def get_is_conductor(self, obj):
-        return hasattr(obj, 'profile') and obj.profile.is_conductor
+    def to_representation(self, instance):
+        """Sobrescribir para obtener is_conductor del perfil"""
+        data = super().to_representation(instance)
+        data['is_conductor'] = hasattr(instance, 'profile') and instance.profile.is_conductor
+        return data
     
     def update(self, instance, validated_data):
-        # Manejar is_conductor si viene en el contexto de la request
-        request = self.context.get('request')
-        if request and hasattr(request, 'data'):
-            is_conductor = request.data.get('is_conductor')
-            if is_conductor is not None:
-                profile, created = UserProfile.objects.get_or_create(user=instance)
-                profile.is_conductor = is_conductor
-                profile.save()
-        return super().update(instance, validated_data)
+        # Extraer is_conductor antes de actualizar el usuario
+        is_conductor = validated_data.pop('is_conductor', None)
+        
+        # Actualizar usuario
+        instance = super().update(instance, validated_data)
+        
+        # Actualizar perfil
+        if is_conductor is not None:
+            profile, created = UserProfile.objects.get_or_create(user=instance)
+            profile.is_conductor = is_conductor
+            profile.save()
+        
+        return instance
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
