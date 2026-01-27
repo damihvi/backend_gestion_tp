@@ -2,26 +2,43 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
     Linea, Parada, Ruta, RutaParada, Vehiculo, Chofer, 
-    Horario, Viaje, Tarjeta, Boleto, Mantenimiento, Incidente
+    Horario, Viaje, Tarjeta, Boleto, Mantenimiento, Incidente, UserProfile
 )
 
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer para el modelo User"""
+    is_conductor = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_conductor']
         read_only_fields = ['id']
+    
+    def get_is_conductor(self, obj):
+        return hasattr(obj, 'profile') and obj.profile.is_conductor
+    
+    def update(self, instance, validated_data):
+        # Manejar is_conductor si viene en el contexto de la request
+        request = self.context.get('request')
+        if request and hasattr(request, 'data'):
+            is_conductor = request.data.get('is_conductor')
+            if is_conductor is not None:
+                profile, created = UserProfile.objects.get_or_create(user=instance)
+                profile.is_conductor = is_conductor
+                profile.save()
+        return super().update(instance, validated_data)
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer para registro de usuarios"""
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'}, label='Confirmar contraseña')
+    is_conductor = serializers.BooleanField(required=False, default=False)
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'password2', 'first_name', 'last_name']
+        fields = ['username', 'email', 'password', 'password2', 'first_name', 'last_name', 'is_conductor']
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -30,7 +47,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         validated_data.pop('password2')
+        is_conductor = validated_data.pop('is_conductor', False)
         user = User.objects.create_user(**validated_data)
+        # Configurar el perfil
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        profile.is_conductor = is_conductor
+        profile.save()
         return user
 
 
