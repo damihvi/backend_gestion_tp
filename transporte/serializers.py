@@ -12,13 +12,21 @@ class UserSerializer(serializers.ModelSerializer):
     is_chofer = serializers.BooleanField(required=False, default=False)
     chofer_id = serializers.IntegerField(required=False, allow_null=True)
     
+    # Campos del Chofer asociado
+    chofer_dni = serializers.CharField(required=False, allow_blank=True)
+    chofer_licencia = serializers.CharField(required=False, allow_blank=True)
+    chofer_telefono = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    chofer_fecha_contratacion = serializers.DateField(required=False, allow_null=True)
+    
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_asistente', 'is_chofer', 'chofer_id']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 
+                  'is_asistente', 'is_chofer', 'chofer_id', 'chofer_dni', 'chofer_licencia', 
+                  'chofer_telefono', 'chofer_fecha_contratacion']
         read_only_fields = ['id']
     
     def to_representation(self, instance):
-        """Sobrescribir para obtener is_asistente, is_chofer y chofer_id del perfil"""
+        """Sobrescribir para obtener is_asistente, is_chofer, chofer_id y datos del chofer"""
         data = super().to_representation(instance)
         # Obtener datos del perfil de forma segura
         try:
@@ -26,21 +34,46 @@ class UserSerializer(serializers.ModelSerializer):
                 data['is_asistente'] = instance.profile.is_asistente
                 data['is_chofer'] = instance.profile.is_chofer
                 data['chofer_id'] = instance.profile.chofer_id if instance.profile.chofer else None
+                
+                # Si tiene un chofer asociado, incluir sus datos
+                if instance.profile.chofer:
+                    chofer = instance.profile.chofer
+                    data['chofer_dni'] = chofer.dni
+                    data['chofer_licencia'] = chofer.licencia
+                    data['chofer_telefono'] = chofer.telefono
+                    data['chofer_fecha_contratacion'] = chofer.fecha_contratacion
+                else:
+                    data['chofer_dni'] = ''
+                    data['chofer_licencia'] = ''
+                    data['chofer_telefono'] = ''
+                    data['chofer_fecha_contratacion'] = None
             else:
                 data['is_asistente'] = False
                 data['is_chofer'] = False
                 data['chofer_id'] = None
+                data['chofer_dni'] = ''
+                data['chofer_licencia'] = ''
+                data['chofer_telefono'] = ''
+                data['chofer_fecha_contratacion'] = None
         except UserProfile.DoesNotExist:
             data['is_asistente'] = False
             data['is_chofer'] = False
             data['chofer_id'] = None
+            data['chofer_dni'] = ''
+            data['chofer_licencia'] = ''
+            data['chofer_telefono'] = ''
+            data['chofer_fecha_contratacion'] = None
         return data
     
     def update(self, instance, validated_data):
-        # Extraer is_asistente, is_chofer y chofer_id antes de actualizar el usuario
+        # Extraer campos del perfil y del chofer
         is_asistente = validated_data.pop('is_asistente', None)
         is_chofer = validated_data.pop('is_chofer', None)
         chofer_id = validated_data.pop('chofer_id', None)
+        chofer_dni = validated_data.pop('chofer_dni', None)
+        chofer_licencia = validated_data.pop('chofer_licencia', None)
+        chofer_telefono = validated_data.pop('chofer_telefono', None)
+        chofer_fecha_contratacion = validated_data.pop('chofer_fecha_contratacion', None)
         
         # Actualizar usuario
         instance = super().update(instance, validated_data)
@@ -61,12 +94,43 @@ class UserSerializer(serializers.ModelSerializer):
                 chofer = Chofer.objects.create(
                     nombre=instance.first_name or instance.username,
                     apellido=instance.last_name or '',
-                    dni='',  # Se deberá actualizar después
-                    licencia='',  # Se deberá actualizar después
+                    dni=chofer_dni or '',
+                    licencia=chofer_licencia or '',
+                    telefono=chofer_telefono or '',
                     email=instance.email,
-                    fecha_contratacion=date.today()
+                    fecha_contratacion=chofer_fecha_contratacion or date.today()
                 )
                 profile.chofer = chofer
+        
+        # Actualizar datos del chofer si existe
+        if profile.chofer:
+            chofer_actualizado = False
+            if chofer_dni is not None:
+                profile.chofer.dni = chofer_dni
+                chofer_actualizado = True
+            if chofer_licencia is not None:
+                profile.chofer.licencia = chofer_licencia
+                chofer_actualizado = True
+            if chofer_telefono is not None:
+                profile.chofer.telefono = chofer_telefono
+                chofer_actualizado = True
+            if chofer_fecha_contratacion is not None:
+                profile.chofer.fecha_contratacion = chofer_fecha_contratacion
+                chofer_actualizado = True
+            
+            # Actualizar nombre y email del chofer con los datos del usuario
+            if instance.first_name:
+                profile.chofer.nombre = instance.first_name
+                chofer_actualizado = True
+            if instance.last_name:
+                profile.chofer.apellido = instance.last_name
+                chofer_actualizado = True
+            if instance.email:
+                profile.chofer.email = instance.email
+                chofer_actualizado = True
+            
+            if chofer_actualizado:
+                profile.chofer.save()
         
         # Actualizar chofer_id (permitir asignar None para desconectar)
         if chofer_id is not None:
