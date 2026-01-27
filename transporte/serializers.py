@@ -30,32 +30,24 @@ class UserSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         # Obtener datos del perfil de forma segura
         try:
-            if hasattr(instance, 'profile'):
-                data['is_asistente'] = instance.profile.is_asistente
-                data['is_chofer'] = instance.profile.is_chofer
-                data['chofer_id'] = instance.profile.chofer_id if instance.profile.chofer else None
-                
-                # Si tiene un chofer asociado, incluir sus datos
-                if instance.profile.chofer:
-                    chofer = instance.profile.chofer
-                    data['chofer_dni'] = chofer.dni
-                    data['chofer_licencia'] = chofer.licencia
-                    data['chofer_telefono'] = chofer.telefono
-                    data['chofer_fecha_contratacion'] = chofer.fecha_contratacion
-                else:
-                    data['chofer_dni'] = ''
-                    data['chofer_licencia'] = ''
-                    data['chofer_telefono'] = ''
-                    data['chofer_fecha_contratacion'] = None
+            profile = instance.profile
+            data['is_asistente'] = profile.is_asistente
+            data['is_chofer'] = profile.is_chofer
+            data['chofer_id'] = profile.chofer_id if profile.chofer else None
+            
+            # Si tiene un chofer asociado, incluir sus datos
+            if profile.chofer:
+                chofer = profile.chofer
+                data['chofer_dni'] = chofer.dni
+                data['chofer_licencia'] = chofer.licencia
+                data['chofer_telefono'] = chofer.telefono
+                data['chofer_fecha_contratacion'] = chofer.fecha_contratacion
             else:
-                data['is_asistente'] = False
-                data['is_chofer'] = False
-                data['chofer_id'] = None
                 data['chofer_dni'] = ''
                 data['chofer_licencia'] = ''
                 data['chofer_telefono'] = ''
                 data['chofer_fecha_contratacion'] = None
-        except UserProfile.DoesNotExist:
+        except (UserProfile.DoesNotExist, AttributeError):
             data['is_asistente'] = False
             data['is_chofer'] = False
             data['chofer_id'] = None
