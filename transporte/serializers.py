@@ -344,14 +344,36 @@ class VehiculoSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Vehiculo"""
     total_viajes = serializers.SerializerMethodField()
     linea_detalle = LineaSerializer(source='linea', read_only=True)
+    linea_numero = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     
     class Meta:
         model = Vehiculo
-        fields = ['id', 'patente', 'marca', 'modelo', 'anio', 'capacidad', 'linea', 'linea_detalle', 'total_viajes']
+        fields = ['id', 'patente', 'marca', 'modelo', 'anio', 'capacidad', 'linea', 'linea_numero', 'linea_detalle', 'total_viajes']
         read_only_fields = ['id', 'linea_detalle']
     
     def get_total_viajes(self, obj):
         return obj.viajes.count()
+
+    def _resolve_linea(self, validated_data):
+        """Permite asignar la línea ya sea por ID o por número."""
+        linea_numero = validated_data.pop('linea_numero', None)
+        if linea_numero is not None:
+            try:
+                validated_data['linea'] = Linea.objects.get(numero=linea_numero)
+            except Linea.DoesNotExist:
+                raise serializers.ValidationError({'linea_numero': f'No existe una línea con número {linea_numero}'})
+        # Normalizar linea vacía enviada como cadena
+        if validated_data.get('linea') == '':
+            validated_data['linea'] = None
+        return validated_data
+
+    def create(self, validated_data):
+        validated_data = self._resolve_linea(validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data = self._resolve_linea(validated_data)
+        return super().update(instance, validated_data)
 
 
 class ChoferSerializer(serializers.ModelSerializer):
