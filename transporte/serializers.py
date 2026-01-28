@@ -478,9 +478,15 @@ class TarjetaSerializer(serializers.ModelSerializer):
         return obj.boletos.count()
 
     def get_usuario_detalle(self, obj):
-        # Devolver id y username del dueño de la tarjeta
+        # Devolver id, username y nombre completo del dueño de la tarjeta
         if obj.usuario:
-            return {'id': obj.usuario.id, 'username': obj.usuario.username}
+            return {
+                'id': obj.usuario.id,
+                'username': obj.usuario.username,
+                'first_name': obj.usuario.first_name,
+                'last_name': obj.usuario.last_name,
+                'nombre_completo': f"{obj.usuario.first_name} {obj.usuario.last_name}".strip()
+            }
         return None
 
 
