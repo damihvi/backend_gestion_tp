@@ -467,14 +467,21 @@ class ViajeSerializer(serializers.ModelSerializer):
 class TarjetaSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Tarjeta"""
     total_boletos = serializers.SerializerMethodField()
+    usuario_detalle = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = Tarjeta
-        fields = ['id', 'usuario', 'numero', 'tipo', 'saldo', 'fecha_emision', 'fecha_expiracion', 'activa', 'total_boletos']
-        read_only_fields = ['id', 'fecha_emision']
+        fields = ['id', 'usuario', 'usuario_detalle', 'numero', 'tipo', 'saldo', 'fecha_emision', 'fecha_expiracion', 'activa', 'total_boletos']
+        read_only_fields = ['id', 'fecha_emision', 'usuario_detalle']
     
     def get_total_boletos(self, obj):
         return obj.boletos.count()
+
+    def get_usuario_detalle(self, obj):
+        # Devolver id y username del dueño de la tarjeta
+        if obj.usuario:
+            return {'id': obj.usuario.id, 'username': obj.usuario.username}
+        return None
 
 
 class BoletoSerializer(serializers.ModelSerializer):
