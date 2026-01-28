@@ -365,7 +365,9 @@ class VehiculoSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Vehiculo
-        fields = ['id', 'patente', 'marca', 'modelo', 'anio', 'capacidad', 'linea', 'linea_numero', 'linea_detalle', 'total_viajes']
+        # 'linea' solo para escritura, no para lectura
+        fields = ['id', 'patente', 'marca', 'modelo', 'anio', 'capacidad', 'linea_numero', 'linea_detalle', 'total_viajes']
+        extra_kwargs = {'linea': {'write_only': True}}
         read_only_fields = ['id', 'linea_detalle']
     
     def get_total_viajes(self, obj):
@@ -385,15 +387,22 @@ class VehiculoSerializer(serializers.ModelSerializer):
             try:
                 validated_data['linea'] = Linea.objects.get(numero=linea_numero)
             except Linea.DoesNotExist:
-                raise serializers.ValidationError({'linea_numero': f'No existe una línea con número {linea_numero}'})
+                # Silenciar el error y dejar la línea en None para no romper el alta/edición
+                validated_data['linea'] = None
 
-        # Permitir linea (pk) enviada como cadena numérica o vacía/null
+        # Permitir linea (pk) enviada como cadena numérica o vacía/null, y silenciar IDs inexistentes
         linea_val = validated_data.get('linea')
         if isinstance(linea_val, str):
             if linea_val.isdigit():
-                validated_data['linea'] = int(linea_val)
+                linea_val = int(linea_val)
             elif linea_val.strip() == '' or linea_val.strip().lower() == 'null':
-                validated_data['linea'] = None
+                linea_val = None
+        if linea_val is not None:
+            # Si la línea no existe, asigna None para evitar 400
+            linea_obj = Linea.objects.filter(pk=linea_val).first()
+            validated_data['linea'] = linea_obj if linea_obj else None
+        else:
+            validated_data['linea'] = None
         return validated_data
 
     def create(self, validated_data):
