@@ -107,6 +107,7 @@ class Vehiculo(models.Model):
     modelo = models.CharField(max_length=50, blank=True, null=True)
     anio = models.IntegerField(blank=True, null=True)
     capacidad = models.IntegerField()
+    linea = models.ForeignKey(Linea, on_delete=models.SET_NULL, null=True, blank=True, related_name='vehiculos')
     
     class Meta:
         db_table = 'vehiculos'

@@ -343,11 +343,12 @@ class RutaSerializer(serializers.ModelSerializer):
 class VehiculoSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Vehiculo"""
     total_viajes = serializers.SerializerMethodField()
+    linea_detalle = LineaSerializer(source='linea', read_only=True)
     
     class Meta:
         model = Vehiculo
-        fields = ['id', 'patente', 'marca', 'modelo', 'anio', 'capacidad', 'total_viajes']
-        read_only_fields = ['id']
+        fields = ['id', 'patente', 'marca', 'modelo', 'anio', 'capacidad', 'linea', 'linea_detalle', 'total_viajes']
+        read_only_fields = ['id', 'linea_detalle']
     
     def get_total_viajes(self, obj):
         return obj.viajes.count()
