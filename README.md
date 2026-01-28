@@ -2,7 +2,7 @@
 
 API REST desarrollada con Django REST Framework para la gestión de un sistema de transporte público. tiene gestión de líneas, rutas, paradas, vehículos, choferes, viajes, tarjetas, boletos, mantenimientos e incidentes.
 
-## Tabla de Contenidos ads
+## Tabla de Contenidos ad
 
 - [Características](#características)
 - [Tecnologías](#tecnologías)
