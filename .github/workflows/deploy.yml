@@ -3,16 +3,13 @@ name: Deploy Backend to VM
 on:
   push:
     branches:
-      - master  # 👈 Cambio aquí
-    paths:
-      - '**/*.py'
-      - 'requirements.txt'
-      - 'transporte_config/**'
+      - master
+  workflow_dispatch:  # Permite ejecución manual
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,27 +23,30 @@ jobs:
           script: |
             # Agregar como directorio seguro
             git config --global --add safe.directory /opt/gestion_transporte/backend_gestion_tp
-            
+
             # Ir al directorio del backend
             cd /opt/gestion_transporte/backend_gestion_tp
-            
+
             # Activar entorno virtual
             source /opt/gestion_transporte/venv/bin/activate
-            
-            # Hacer pull del código (master, no main)
+
+            # Hacer pull del código
             git pull origin master
-            
+
             # Instalar dependencias
             pip install -r requirements.txt
-            
+
+            # Hacer merge de migraciones si hay conflicto
+            python manage.py makemigrations --merge --noinput || true
+
             # Ejecutar migraciones
             python manage.py migrate --noinput
-            
+
             # Recolectar archivos estáticos
             python manage.py collectstatic --noinput
-            
+
             # Reiniciar Gunicorn
             sudo systemctl restart gunicorn
-            
+
             # Verificar estado
             sudo systemctl status gunicorn --no-pager
