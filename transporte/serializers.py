@@ -341,6 +341,21 @@ class RutaSerializer(serializers.ModelSerializer):
 
 
 class VehiculoSerializer(serializers.ModelSerializer):
+        def to_internal_value(self, data):
+            # Forzar conversión de string numérica a int para 'linea' antes de validación DRF
+            if 'linea' in data:
+                linea_val = data['linea']
+                if isinstance(linea_val, str) and linea_val.isdigit():
+                    data['linea'] = int(linea_val)
+                elif isinstance(linea_val, str) and (linea_val.strip() == '' or linea_val.strip().lower() == 'null'):
+                    data['linea'] = None
+            if 'linea_numero' in data:
+                linea_numero_val = data['linea_numero']
+                if isinstance(linea_numero_val, str) and linea_numero_val.isdigit():
+                    data['linea_numero'] = int(linea_numero_val)
+                elif isinstance(linea_numero_val, str) and (linea_numero_val.strip() == '' or linea_numero_val.strip().lower() == 'null'):
+                    data['linea_numero'] = None
+            return super().to_internal_value(data)
     """Serializer para el modelo Vehiculo"""
     total_viajes = serializers.SerializerMethodField()
     linea_detalle = LineaSerializer(source='linea', read_only=True)
